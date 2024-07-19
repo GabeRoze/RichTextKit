@@ -44,19 +44,31 @@ private extension RichTextCoordinator {
 
     func subscribeToAlignment() {
         subscribe(to: context.$textAlignment) { [weak self] in
-            self?.handle(.setAlignment($0))
+            // fixes issue where text font being changed on selection change
+            if let textViewRangeChanging = self?.textViewRangeChanging,
+               textViewRangeChanging == false {
+                self?.handle(.setAlignment($0))
+            }
         }
     }
 
     func subscribeToFontName() {
         subscribe(to: context.$fontName) { [weak self] in
-            self?.textView.setRichTextFontName($0)
+            // fixes issue where text font being changed on selection change
+            if let textViewRangeChanging = self?.textViewRangeChanging,
+            textViewRangeChanging == false {
+                self?.textView.setRichTextFontName($0)
+            }
         }
     }
 
     func subscribeToFontSize() {
         subscribe(to: context.$fontSize) { [weak self] in
-            self?.textView.setRichTextFontSize($0)
+            // fixes issue where text font being changed on selection change
+            if let textViewRangeChanging = self?.textViewRangeChanging,
+               textViewRangeChanging == false {
+                self?.textView.setRichTextFontSize($0)
+            }
         }
     }
 

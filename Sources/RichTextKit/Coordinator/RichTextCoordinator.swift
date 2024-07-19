@@ -65,6 +65,8 @@ open class RichTextCoordinator: NSObject {
     /// Allows for observing text changes
     private var textViewSouldChangeTextInRange: RichTextEditor.TextViewSouldChangeTextInRange
     private var textViewDidChangeSelection: RichTextEditor.TextViewDidChangeSelection
+    // this is an ugly fix due to how we toggle the flag back to false. We use a delay to ensure the operations get done in time. There should be a better way
+    var textViewRangeChanging = false
     
     /// This set is used to store context observations.
     public var cancellables = Set<AnyCancellable>()
@@ -105,6 +107,8 @@ open class RichTextCoordinator: NSObject {
     }
 
     open func textViewDidChangeSelection(_ textView: UITextView) {
+        // special case: changing range should not change the fonts which occurs without this flag
+        textViewRangeChanging = true
         syncWithTextView()
         textViewDidChangeSelection()
     }
@@ -134,6 +138,8 @@ open class RichTextCoordinator: NSObject {
     }
 
     open func textViewDidChangeSelection(_ notification: Notification) {
+        // special case: changing range should not change the fonts which occurs without this flag
+        textViewRangeChanging = true
         syncWithTextView()
         textViewDidChangeSelection()
     }
@@ -180,6 +186,16 @@ extension RichTextCoordinator {
     func syncWithTextView() {
         syncContextWithTextView()
         syncTextWithTextView()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if self.shouldDelaySyncContextWithTextView {
+                DispatchQueue.main.async {
+                    self.textViewRangeChanging = false
+                }
+            } else {
+                self.textViewRangeChanging = false
+            }
+        }
     }
 
     /// Sync the rich text context with the text view.
